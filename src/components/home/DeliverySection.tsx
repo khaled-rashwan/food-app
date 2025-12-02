@@ -1,31 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { deliverySteps } from "@/src/lib/mock-data";
+import { useState } from "react";
+import { useTranslations } from "next-intl";
 
-interface DeliverySectionProps {
-  locale?: "en" | "ar";
-}
-
-export default function DeliverySection({
-  locale = "en",
-}: DeliverySectionProps) {
+export default function DeliverySection() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSimulating, setIsSimulating] = useState(false);
-  const isArabic = locale === "ar";
+  const t = useTranslations('delivery');
 
-  const content = {
-    title: { en: "Live Delivery Tracking", ar: "تتبع التوصيل المباشر" },
-    subtitle: {
-      en: "From our kitchen to your doorstep.",
-      ar: "من مطبخنا إلى عتبة بابك.",
-    },
-    buttonText: { en: "Simulate Delivery", ar: "محاكاة التوصيل" },
-  };
-
-  const title = isArabic ? content.title.ar : content.title.en;
-  const subtitle = isArabic ? content.subtitle.ar : content.subtitle.en;
-  const buttonText = isArabic ? content.buttonText.ar : content.buttonText.en;
+  const steps = [
+    { icon: "🍳", step: 1 },
+    { icon: "📦", step: 2 },
+    { icon: "🛵", step: 3 },
+    { icon: "🏠", step: 4 },
+  ];
 
   const handleSimulate = () => {
     if (isSimulating) return;
@@ -35,7 +23,7 @@ export default function DeliverySection({
     const interval = setInterval(() => {
       setCurrentStep((prev) => {
         const next = prev + 1;
-        if (next >= deliverySteps.length) {
+        if (next >= steps.length) {
           clearInterval(interval);
           setIsSimulating(false);
           return prev;
@@ -45,7 +33,7 @@ export default function DeliverySection({
     }, 1500);
   };
 
-  const progress = (currentStep / (deliverySteps.length - 1)) * 100;
+  const progress = (currentStep / (steps.length - 1)) * 100;
 
   return (
     <section
@@ -54,9 +42,9 @@ export default function DeliverySection({
     >
       <div className="mb-12">
         <h2 className="font-serif text-4xl md:text-5xl text-[#D4AF37] mb-4">
-          {title}
+          {t('title')}
         </h2>
-        <p className="text-gray-400 italic text-lg mb-12">{subtitle}</p>
+        <p className="text-gray-400 italic text-lg mb-12">{t('subtitle')}</p>
       </div>
 
       <div className="w-full max-w-4xl bg-white/5 backdrop-blur-lg p-8 md:p-12 rounded-3xl border border-[#D4AF37]/20 shadow-2xl">
@@ -71,10 +59,11 @@ export default function DeliverySection({
 
           {/* Steps */}
           <div className="flex justify-between items-start px-10 gap-4 relative z-10">
-            {deliverySteps.map((step, index) => {
+            {steps.map((step, index) => {
               const isActive = index <= currentStep;
-              const icon = isArabic ? step.iconAr : step.iconEn;
-              const label = isArabic ? step.labelAr : step.labelEn;
+              const icon = step.icon;
+              const labelKey = ['preparing', 'ready', 'onTheWay', 'delivered'][index];
+              const label = t(`steps.${labelKey}` as any);
 
               return (
                 <div
@@ -112,8 +101,7 @@ export default function DeliverySection({
           <div
             className="text-5xl transition-all duration-1000 ease-linear"
             style={{
-              transform: isArabic ? "scaleX(1)" : "scaleX(-1)",
-              marginLeft: `${progress}%`,
+              marginInlineStart: `${progress}%`,
             }}
           >
             🛵
@@ -126,7 +114,7 @@ export default function DeliverySection({
           disabled={isSimulating}
           className="px-8 py-3 border-2 border-[#D4AF37] text-[#D4AF37] font-semibold rounded-full hover:bg-[#D4AF37] hover:text-gray-900 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_5px_20px_rgba(212,175,55,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {buttonText}
+          {t('simulateBtn')}
         </button>
       </div>
     </section>

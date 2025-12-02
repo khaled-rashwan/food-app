@@ -1,0 +1,41 @@
+{
+  "nav": {
+    "logo": "Gourmet Kuwait",
+    "home": "Home",
+    "signature": "Our Signature",
+    "track": "Track Order",
+    "orderNow": "Order Now"
+  },
+  "hero": {
+    "title": "Taste the Tradition,",
+    "titleItalic": "Reimagined.",
+    "subtitle": "Premium catering and swift delivery across Kuwait.",
+    "cta": "Explore Menu"
+  },
+  "anatomy": {
+    "title": "The Anatomy of Flavor",
+    "subtitle": "Click to deconstruct our signature Machboos.",
+    "clickToToggle": "Click the image to toggle between complete and anatomy view"
+  },
+  "delivery": {
+    "title": "Live Delivery Tracking",
+    "subtitle": "From our kitchen to your doorstep.",
+    "simulateBtn": "Simulate Delivery",
+    "steps": {
+      "preparing": "Preparing",
+      "ready": "Ready",
+      "onTheWay": "On the Way",
+      "delivered": "Delivered"
+    }
+  },
+  "footer": {
+    "copyright": "© 2025 Gourmet Kuwait. All rights reserved.",
+    "staffLogin": "Staff Login"
+  },
+  "meals": {
+    "machboos": {
+      "name": "Signature Machboos",
+      "description": "Traditional Kuwaiti spiced rice with tender lamb, aromatic herbs, and our secret blend of spices."
+    }
+  }
+}

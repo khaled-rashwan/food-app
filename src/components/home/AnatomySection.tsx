@@ -1,28 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { mockMeals } from "@/src/lib/mock-data";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 
-interface AnatomySectionProps {
-  locale?: "en" | "ar";
-}
-
-export default function AnatomySection({ locale = "en" }: AnatomySectionProps) {
+export default function AnatomySection() {
   const [isExploded, setIsExploded] = useState(false);
-  const isArabic = locale === "ar";
-  const meal = mockMeals[0]; // Using first meal as signature dish
-
-  const content = {
-    title: { en: "The Anatomy of Flavor", ar: "تشريح النكهة" },
-    subtitle: {
-      en: `Click to deconstruct our signature ${meal.nameEn}.`,
-      ar: `انقر لتفكيك ${meal.nameAr} المميز.`,
-    },
-  };
-
-  const title = isArabic ? content.title.ar : content.title.en;
-  const subtitle = isArabic ? content.subtitle.ar : content.subtitle.en;
+  const t = useTranslations('anatomy');
 
   return (
     <section
@@ -31,9 +15,9 @@ export default function AnatomySection({ locale = "en" }: AnatomySectionProps) {
     >
       <div className="mb-12">
         <h2 className="font-serif text-4xl md:text-5xl text-[#D4AF37] mb-4">
-          {title}
+          {t('title')}
         </h2>
-        <p className="text-gray-400 italic text-lg">{subtitle}</p>
+        <p className="text-gray-400 italic text-lg">{t('subtitle')}</p>
       </div>
 
       <div className="w-full max-w-4xl px-4">
@@ -43,8 +27,8 @@ export default function AnatomySection({ locale = "en" }: AnatomySectionProps) {
         >
           {/* Complete Dish */}
           <Image
-            src={meal.mainImage}
-            alt={isArabic ? meal.nameAr : meal.nameEn}
+            src="/images/meals/machboos_main.png"
+            alt={t('title')}
             fill
             className={`object-contain transition-opacity duration-600 ${
               isExploded ? "opacity-0" : "opacity-100"
@@ -55,8 +39,8 @@ export default function AnatomySection({ locale = "en" }: AnatomySectionProps) {
 
           {/* Anatomy Diagram */}
           <Image
-            src={meal.anatomyImage}
-            alt={`${isArabic ? meal.nameAr : meal.nameEn} Anatomy`}
+            src="/images/meals/anatomy.png"
+            alt={`${t('title')} Anatomy`}
             fill
             className={`object-contain transition-opacity duration-600 ${
               isExploded ? "opacity-100" : "opacity-0"
@@ -66,9 +50,7 @@ export default function AnatomySection({ locale = "en" }: AnatomySectionProps) {
         </div>
 
         <p className="mt-8 text-gray-400 text-sm">
-          {isArabic
-            ? "انقر على الصورة للتبديل بين العرض الكامل والتفاصيل"
-            : "Click the image to toggle between complete and anatomy view"}
+          {t('clickToToggle')}
         </p>
       </div>
     </section>
