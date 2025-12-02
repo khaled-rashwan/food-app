@@ -16,7 +16,9 @@
     "next-intl": "^4.5.7",
     "react": "^18",
     "react-dom": "^18",
-    "tailwindcss-rtl": "^0.9.0"
+    "react-hot-toast": "^2.6.0",
+    "tailwindcss-rtl": "^0.9.0",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.5.1",

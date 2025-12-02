@@ -1,10 +1,14 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import Link from "next/link";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { useCartStore } from "@/lib/store/cartStore";
 
 export default function Navbar() {
   const t = useTranslations('nav');
+  const locale = useLocale();
+  const itemCount = useCartStore((state) => state.getItemCount());
 
   return (
     <header className="fixed w-full z-50 bg-gray-900 border-b-[3px] border-[#D4AF37] shadow-lg">
@@ -43,6 +47,33 @@ export default function Navbar() {
 
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
+            
+            {/* Cart Icon with Counter */}
+            <Link 
+              href={`/${locale}/cart`}
+              className="relative p-2 text-gray-200 hover:text-[#D4AF37] transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
+                />
+              </svg>
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -end-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
+            
             <button className="px-6 py-3 border-2 border-[#D4AF37] bg-[#D4AF37] text-gray-900 font-semibold rounded-full hover:bg-transparent hover:text-[#D4AF37] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_5px_20px_rgba(212,175,55,0.3)]">
               {t('orderNow')}
             </button>

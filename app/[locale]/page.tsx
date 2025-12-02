@@ -4,14 +4,18 @@ import Navbar from "@/src/components/home/Navbar";
 import HeroSection from "@/src/components/home/HeroSection";
 import AnatomySection from "@/src/components/home/AnatomySection";
 import DeliverySection from "@/src/components/home/DeliverySection";
+import ProductsSection from "@/app/components/ProductsSection";
 
 export default function HomePage() {
+  const locale = useLocale();
+  
   return (
     <div className="bg-gray-900">
       <Navbar />
       <main>
         <HeroSection />
         <AnatomySection />
+        <ProductsSection locale={locale} />
         <DeliverySection />
       </main>
 
