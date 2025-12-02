@@ -6,16 +6,14 @@ import { defineAuth } from "@aws-amplify/backend";
  */
 export const auth = defineAuth({
   loginWith: {
-    // Enable BOTH mechanisms to support your two user roles
     email: true,
     phone: true, 
   },
-  // Define the data you need to collect per Requirement #9
+  groups: ["Admin", "Kitchen", "Delivery"],
   userAttributes: {
-    // We specify these so Amplify provisions them in the User Pool
     givenName: {
       mutable: true,
-      required: false, // Optional so Admins don't strictly need it to sign up initially
+      required: false,
     },
     familyName: {
       mutable: true,
@@ -27,11 +25,11 @@ export const auth = defineAuth({
     },
     email: {
       mutable: true,
-      required: false, // CRITICAL: Must be false so Customers can sign up with only Phone
+      required: false,
     },
     phoneNumber: {
       mutable: true,
-      required: false, // CRITICAL: Must be false so Admins can sign up with only Email
+      required: false,
     },
   },
 });
