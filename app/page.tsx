@@ -79,6 +79,11 @@ export default function HomePage() {
         {/* Footer */}
         <footer className="mt-16 text-center text-gray-600">
           <p>© 2025 Kuwait Food Delivery & Catering. All rights reserved.</p>
+          <p className="mt-2">
+            <Link href="/admin/login" className="text-gray-400 hover:text-gray-600 text-sm">
+              Staff Login
+            </Link>
+          </p>
         </footer>
       </div>
     </main>

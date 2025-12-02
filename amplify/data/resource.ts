@@ -97,7 +97,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.authenticated().to(["read"]),
-      allow.group("admins"),
+      allow.group("Admin"),
     ]),
 
   // Product Model (Menu Items)
@@ -119,7 +119,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.authenticated().to(["read"]),
-      allow.group("admins"),
+      allow.group("Admin"),
     ]),
 
   // Catering Package Model
@@ -141,7 +141,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.authenticated().to(["read"]),
-      allow.group("admins"),
+      allow.group("Admin"),
     ]),
 
   // User Profile Model (extends Cognito user)
@@ -162,7 +162,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.owner().to(["read", "update"]),
-      allow.group("admins"),
+      allow.group("Admin"),
     ]),
 
   // Cart Model
@@ -213,7 +213,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.owner(),
-      allow.group("admins"),
+      allow.group("Admin"),
       allow.group("kitchen").to(["read", "update"]),
       allow.group("delivery").to(["read", "update"]),
     ]),
@@ -231,7 +231,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.owner().to(["create", "read"]),
-      allow.group("admins"),
+      allow.group("Admin"),
       allow.authenticated().to(["read"]), // Anyone can read approved reviews
     ]),
 
@@ -253,7 +253,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.authenticated().to(["read"]),
-      allow.group("admins"),
+      allow.group("Admin"),
     ]),
 
   // Loyalty Transaction Model
@@ -269,7 +269,7 @@ const schema = a.schema({
     })
     .authorization((allow) => [
       allow.owner().to(["read"]),
-      allow.group("admins"),
+      allow.group("Admin"),
     ]),
 });
 
