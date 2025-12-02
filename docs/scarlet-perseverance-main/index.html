@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gourmet Kuwait | Premium Catering & Delivery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <header class="main-header">
+        <nav class="nav-container">
+            <div class="logo">Gourmet Kuwait</div>
+            <ul class="nav-links">
+                <li><a href="#hero">Home</a></li>
+                <li><a href="#anatomy">Our Signature</a></li>
+                <li><a href="#delivery">Track Order</a></li>
+            </ul>
+            <button class="cta-button">Order Now</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero" class="hero-section">
+            <div class="hero-content">
+                <h1>Taste the Tradition, <br><em>Reimagined.</em></h1>
+                <p>Premium catering and swift delivery across Kuwait.</p>
+                <button class="cta-button primary">Explore Menu</button>
+            </div>
+            <div class="hero-image-container">
+                <!-- Hero image is now background -->
+            </div>
+        </section>
+
+        <section id="anatomy" class="anatomy-section">
+            <div class="section-header">
+                <h2>The Anatomy of Flavor</h2>
+                <p>Click to deconstruct our signature Machboos.</p>
+            </div>
+            <div class="anatomy-container" id="anatomy-container">
+                <div class="dish-container" id="dish-container">
+                    <!-- Complete dish shown initially -->
+                    <img src="assets/machboos_main.png" alt="Complete Machboos" class="dish-image dish-complete">
+
+                    <!-- Anatomy diagram shown on click -->
+                    <img src="assets/anatomy.png" alt="Machboos Anatomy" class="dish-image dish-anatomy">
+                </div>
+            </div>
+        </section>
+
+        <section id="delivery" class="delivery-section">
+            <div class="section-header">
+                <h2>Live Delivery Tracking</h2>
+                <p>From our kitchen to your doorstep.</p>
+            </div>
+            <div class="tracker-container">
+                <div class="track-line">
+                    <div class="track-progress" id="track-progress"></div>
+                </div>
+                <div class="track-steps">
+                    <div class="step active" data-step="1">
+                        <div class="step-icon">🍳</div>
+                        <div class="step-label">Preparing</div>
+                    </div>
+                    <div class="step" data-step="2">
+                        <div class="step-icon">📦</div>
+                        <div class="step-label">Ready</div>
+                    </div>
+                    <div class="step" data-step="3">
+                        <div class="step-icon">🛵</div>
+                        <div class="step-label">On the Way</div>
+                    </div>
+                    <div class="step" data-step="4">
+                        <div class="step-icon">🏠</div>
+                        <div class="step-label">Delivered</div>
+                    </div>
+                </div>
+                <div class="map-visualization">
+                    <!-- Abstract map or delivery animation -->
+                    <div class="delivery-scooter" id="delivery-scooter">🛵</div>
+                </div>
+                <button id="simulate-delivery" class="secondary-button">Simulate Delivery</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Gourmet Kuwait. All rights reserved.</p>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>
