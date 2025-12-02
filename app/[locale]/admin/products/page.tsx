@@ -5,6 +5,7 @@ import { fetchAuthSession, signOut } from "aws-amplify/auth";
 import { useRouter, useParams } from "next/navigation";
 import { Amplify } from "aws-amplify";
 import { generateClient } from "aws-amplify/data";
+import { uploadData, getUrl } from "aws-amplify/storage";
 import type { Schema } from "@/amplify/data/resource";
 import outputs from "@/amplify_outputs.json";
 import Link from "next/link";
@@ -26,6 +27,10 @@ export default function AdminProductsPage() {
   // Categories state
   const [categories, setCategories] = useState<any[]>([]);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
+  const [categoryImagePreview, setCategoryImagePreview] = useState<string>("");
+  const [uploadingCategoryImage, setUploadingCategoryImage] = useState(false);
   const [newCategory, setNewCategory] = useState({
     nameEn: "",
     nameAr: "",
@@ -33,12 +38,17 @@ export default function AdminProductsPage() {
     descriptionAr: "",
     sortOrder: 0,
     isActive: true,
+    imageUrl: "",
   });
 
   // Products state
   const [products, setProducts] = useState<any[]>([]);
   const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [productImageFile, setProductImageFile] = useState<File | null>(null);
+  const [productImagePreview, setProductImagePreview] = useState<string>("");
+  const [uploadingProductImage, setUploadingProductImage] = useState(false);
   const [newProduct, setNewProduct] = useState({
     nameEn: "",
     nameAr: "",
@@ -131,11 +141,70 @@ export default function AdminProductsPage() {
     }
   }
 
+  // Upload image to S3
+  async function uploadImageToS3(file: File, path: string): Promise<string> {
+    try {
+      const result = await uploadData({
+        path: `public/${path}/${Date.now()}-${file.name}`,
+        data: file,
+        options: {
+          contentType: file.type,
+        }
+      }).result;
+
+      // Get public URL
+      const urlResult = await getUrl({
+        path: result.path,
+      });
+
+      return urlResult.url.toString().split('?')[0]; // Remove query params
+    } catch (error) {
+      console.error("Error uploading to S3:", error);
+      throw error;
+    }
+  }
+
+  // Handle category image selection
+  function handleCategoryImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCategoryImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCategoryImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // Handle product image selection
+  function handleProductImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProductImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProductImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
   async function handleCreateCategory(e: React.FormEvent) {
     e.preventDefault();
     try {
+      let imageUrl = newCategory.imageUrl;
+
+      // Upload image if file selected
+      if (categoryImageFile) {
+        setUploadingCategoryImage(true);
+        imageUrl = await uploadImageToS3(categoryImageFile, "categories");
+        setUploadingCategoryImage(false);
+      }
+
       const { data, errors } = await client.models.Category.create({
         ...newCategory,
+        imageUrl: imageUrl || undefined,
       });
 
       if (errors) {
@@ -144,28 +213,100 @@ export default function AdminProductsPage() {
       } else {
         alert("Category created successfully!");
         setShowCategoryForm(false);
-        setNewCategory({
-          nameEn: "",
-          nameAr: "",
-          descriptionEn: "",
-          descriptionAr: "",
-          sortOrder: 0,
-          isActive: true,
-        });
+        resetCategoryForm();
         loadCategories();
       }
     } catch (error) {
       console.error("Error creating category:", error);
       alert("Failed to create category");
+      setUploadingCategoryImage(false);
+    }
+  }
+
+  async function handleUpdateCategory(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingCategory) return;
+
+    try {
+      let imageUrl = editingCategory.imageUrl;
+
+      // Upload new image if file selected
+      if (categoryImageFile) {
+        setUploadingCategoryImage(true);
+        imageUrl = await uploadImageToS3(categoryImageFile, "categories");
+        setUploadingCategoryImage(false);
+      }
+
+      const { data, errors } = await client.models.Category.update({
+        id: editingCategory.id,
+        nameEn: editingCategory.nameEn,
+        nameAr: editingCategory.nameAr,
+        descriptionEn: editingCategory.descriptionEn,
+        descriptionAr: editingCategory.descriptionAr,
+        sortOrder: editingCategory.sortOrder,
+        isActive: editingCategory.isActive,
+        imageUrl: imageUrl || undefined,
+      });
+
+      if (errors) {
+        console.error("Error updating category:", errors);
+        alert("Failed to update category");
+      } else {
+        alert("Category updated successfully!");
+        setEditingCategory(null);
+        resetCategoryForm();
+        loadCategories();
+      }
+    } catch (error) {
+      console.error("Error updating category:", error);
+      alert("Failed to update category");
+      setUploadingCategoryImage(false);
+    }
+  }
+
+  function resetCategoryForm() {
+    setNewCategory({
+      nameEn: "",
+      nameAr: "",
+      descriptionEn: "",
+      descriptionAr: "",
+      sortOrder: 0,
+      isActive: true,
+      imageUrl: "",
+    });
+    setCategoryImageFile(null);
+    setCategoryImagePreview("");
+    setEditingCategory(null);
+  }
+
+  function startEditCategory(category: any) {
+    setEditingCategory(category);
+    setShowCategoryForm(true);
+    if (category.imageUrl) {
+      setCategoryImagePreview(category.imageUrl);
     }
   }
 
   async function handleCreateProduct(e: React.FormEvent) {
     e.preventDefault();
     try {
+      let images: string[] = [];
+
+      // Upload image if file selected
+      if (productImageFile) {
+        setUploadingProductImage(true);
+        const imageUrl = await uploadImageToS3(productImageFile, "products");
+        images = [imageUrl];
+        setUploadingProductImage(false);
+      } else if (imageUrlInput) {
+        // Fallback to URL input
+        images = [imageUrlInput];
+      }
+
       const { data, errors } = await client.models.Product.create({
         ...newProduct,
-        type: "MEAL" as any, // Default to MEAL type
+        images,
+        type: "MEAL" as any,
       });
 
       if (errors) {
@@ -174,23 +315,83 @@ export default function AdminProductsPage() {
       } else {
         alert("Product created successfully!");
         setShowProductForm(false);
-        setNewProduct({
-          nameEn: "",
-          nameAr: "",
-          descriptionEn: "",
-          descriptionAr: "",
-          price: 0,
-          categoryId: "",
-          images: [],
-          isAvailable: true,
-          preparationTimeMinutes: 15,
-        });
-        setImageUrlInput("");
+        resetProductForm();
         loadProducts();
       }
     } catch (error) {
       console.error("Error creating product:", error);
       alert("Failed to create product");
+      setUploadingProductImage(false);
+    }
+  }
+
+  async function handleUpdateProduct(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingProduct) return;
+
+    try {
+      let images = editingProduct.images || [];
+
+      // Upload new image if file selected
+      if (productImageFile) {
+        setUploadingProductImage(true);
+        const imageUrl = await uploadImageToS3(productImageFile, "products");
+        images = [imageUrl];
+        setUploadingProductImage(false);
+      }
+
+      const { data, errors } = await client.models.Product.update({
+        id: editingProduct.id,
+        nameEn: editingProduct.nameEn,
+        nameAr: editingProduct.nameAr,
+        descriptionEn: editingProduct.descriptionEn,
+        descriptionAr: editingProduct.descriptionAr,
+        price: editingProduct.price,
+        categoryId: editingProduct.categoryId,
+        images,
+        isAvailable: editingProduct.isAvailable,
+        preparationTimeMinutes: editingProduct.preparationTimeMinutes,
+      });
+
+      if (errors) {
+        console.error("Error updating product:", errors);
+        alert("Failed to update product");
+      } else {
+        alert("Product updated successfully!");
+        setEditingProduct(null);
+        resetProductForm();
+        loadProducts();
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
+      alert("Failed to update product");
+      setUploadingProductImage(false);
+    }
+  }
+
+  function resetProductForm() {
+    setNewProduct({
+      nameEn: "",
+      nameAr: "",
+      descriptionEn: "",
+      descriptionAr: "",
+      price: 0,
+      categoryId: "",
+      images: [],
+      isAvailable: true,
+      preparationTimeMinutes: 15,
+    });
+    setImageUrlInput("");
+    setProductImageFile(null);
+    setProductImagePreview("");
+    setEditingProduct(null);
+  }
+
+  function startEditProduct(product: any) {
+    setEditingProduct(product);
+    setShowProductForm(true);
+    if (product.images && product.images.length > 0) {
+      setProductImagePreview(product.images[0]);
     }
   }
 
@@ -301,7 +502,10 @@ export default function AdminProductsPage() {
             {/* Add Category Button */}
             <div className="flex justify-end">
               <button
-                onClick={() => setShowCategoryForm(!showCategoryForm)}
+                onClick={() => {
+                  resetCategoryForm();
+                  setShowCategoryForm(!showCategoryForm);
+                }}
                 className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold"
               >
                 {showCategoryForm ? "Cancel" : "+ Add Category"}
@@ -311,8 +515,10 @@ export default function AdminProductsPage() {
             {/* Category Form */}
             {showCategoryForm && (
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold mb-4">Create New Category</h2>
-                <form onSubmit={handleCreateCategory} className="space-y-4">
+                <h2 className="text-xl font-semibold mb-4">
+                  {editingCategory ? "Edit Category" : "Create New Category"}
+                </h2>
+                <form onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -320,8 +526,11 @@ export default function AdminProductsPage() {
                       </label>
                       <input
                         type="text"
-                        value={newCategory.nameEn}
-                        onChange={(e) => setNewCategory({ ...newCategory, nameEn: e.target.value })}
+                        value={editingCategory ? editingCategory.nameEn : newCategory.nameEn}
+                        onChange={(e) => editingCategory 
+                          ? setEditingCategory({ ...editingCategory, nameEn: e.target.value })
+                          : setNewCategory({ ...newCategory, nameEn: e.target.value })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                         required
                       />
@@ -332,8 +541,11 @@ export default function AdminProductsPage() {
                       </label>
                       <input
                         type="text"
-                        value={newCategory.nameAr}
-                        onChange={(e) => setNewCategory({ ...newCategory, nameAr: e.target.value })}
+                        value={editingCategory ? editingCategory.nameAr : newCategory.nameAr}
+                        onChange={(e) => editingCategory 
+                          ? setEditingCategory({ ...editingCategory, nameAr: e.target.value })
+                          : setNewCategory({ ...newCategory, nameAr: e.target.value })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                         required
                       />
@@ -346,8 +558,11 @@ export default function AdminProductsPage() {
                         Description (English)
                       </label>
                       <textarea
-                        value={newCategory.descriptionEn}
-                        onChange={(e) => setNewCategory({ ...newCategory, descriptionEn: e.target.value })}
+                        value={editingCategory ? editingCategory.descriptionEn : newCategory.descriptionEn}
+                        onChange={(e) => editingCategory 
+                          ? setEditingCategory({ ...editingCategory, descriptionEn: e.target.value })
+                          : setNewCategory({ ...newCategory, descriptionEn: e.target.value })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                         rows={3}
                       />
@@ -357,12 +572,40 @@ export default function AdminProductsPage() {
                         Description (Arabic)
                       </label>
                       <textarea
-                        value={newCategory.descriptionAr}
-                        onChange={(e) => setNewCategory({ ...newCategory, descriptionAr: e.target.value })}
+                        value={editingCategory ? editingCategory.descriptionAr : newCategory.descriptionAr}
+                        onChange={(e) => editingCategory 
+                          ? setEditingCategory({ ...editingCategory, descriptionAr: e.target.value })
+                          : setNewCategory({ ...newCategory, descriptionAr: e.target.value })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                         rows={3}
                       />
                     </div>
+                  </div>
+
+                  {/* Image Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category Image
+                    </label>
+                    {categoryImagePreview && (
+                      <div className="mb-3">
+                        <img 
+                          src={categoryImagePreview} 
+                          alt="Preview" 
+                          className="h-32 w-32 object-cover rounded-lg"
+                        />
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCategoryImageChange}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Upload image or leave empty to skip
+                    </p>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
@@ -372,8 +615,11 @@ export default function AdminProductsPage() {
                       </label>
                       <input
                         type="number"
-                        value={newCategory.sortOrder}
-                        onChange={(e) => setNewCategory({ ...newCategory, sortOrder: parseInt(e.target.value) })}
+                        value={editingCategory ? editingCategory.sortOrder : newCategory.sortOrder}
+                        onChange={(e) => editingCategory 
+                          ? setEditingCategory({ ...editingCategory, sortOrder: parseInt(e.target.value) })
+                          : setNewCategory({ ...newCategory, sortOrder: parseInt(e.target.value) })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                       />
                     </div>
@@ -381,8 +627,11 @@ export default function AdminProductsPage() {
                       <label className="flex items-center cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={newCategory.isActive}
-                          onChange={(e) => setNewCategory({ ...newCategory, isActive: e.target.checked })}
+                          checked={editingCategory ? editingCategory.isActive : newCategory.isActive}
+                          onChange={(e) => editingCategory 
+                            ? setEditingCategory({ ...editingCategory, isActive: e.target.checked })
+                            : setNewCategory({ ...newCategory, isActive: e.target.checked })
+                          }
                           className="w-5 h-5 text-orange-500"
                         />
                         <span className="ml-2 text-sm font-medium text-gray-700">Active</span>
@@ -393,16 +642,20 @@ export default function AdminProductsPage() {
                   <div className="flex justify-end gap-4">
                     <button
                       type="button"
-                      onClick={() => setShowCategoryForm(false)}
+                      onClick={() => {
+                        setShowCategoryForm(false);
+                        resetCategoryForm();
+                      }}
                       className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                      disabled={uploadingCategoryImage}
+                      className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
                     >
-                      Create Category
+                      {uploadingCategoryImage ? "Uploading..." : editingCategory ? "Update Category" : "Create Category"}
                     </button>
                   </div>
                 </form>
@@ -417,32 +670,49 @@ export default function AdminProductsPage() {
                 </div>
               ) : (
                 categories.map((category) => (
-                  <div key={category.id} className="bg-white rounded-lg shadow p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="font-semibold text-lg">{category.nameEn}</h3>
-                        <p className="text-sm text-gray-600">{category.nameAr}</p>
+                  <div key={category.id} className="bg-white rounded-lg shadow overflow-hidden">
+                    {category.imageUrl && (
+                      <div className="h-32 bg-gray-200">
+                        <img
+                          src={category.imageUrl}
+                          alt={category.nameEn}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      <span
-                        className={`px-2 py-1 text-xs rounded ${
-                          category.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {category.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </div>
-                    {category.descriptionEn && (
-                      <p className="text-sm text-gray-600 mb-4">{category.descriptionEn}</p>
                     )}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleDeleteCategory(category.id)}
-                        className="flex-1 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
-                      >
-                        Delete
-                      </button>
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="font-semibold text-lg">{category.nameEn}</h3>
+                          <p className="text-sm text-gray-600">{category.nameAr}</p>
+                        </div>
+                        <span
+                          className={`px-2 py-1 text-xs rounded ${
+                            category.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {category.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                      {category.descriptionEn && (
+                        <p className="text-sm text-gray-600 mb-4">{category.descriptionEn}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => startEditCategory(category)}
+                          className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategory(category.id)}
+                          className="flex-1 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -471,7 +741,10 @@ export default function AdminProductsPage() {
                 </select>
               </div>
               <button
-                onClick={() => setShowProductForm(!showProductForm)}
+                onClick={() => {
+                  resetProductForm();
+                  setShowProductForm(!showProductForm);
+                }}
                 className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold"
               >
                 {showProductForm ? "Cancel" : "+ Add Product"}
@@ -481,8 +754,10 @@ export default function AdminProductsPage() {
             {/* Product Form */}
             {showProductForm && (
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold mb-4">Create New Product</h2>
-                <form onSubmit={handleCreateProduct} className="space-y-4">
+                <h2 className="text-xl font-semibold mb-4">
+                  {editingProduct ? "Edit Product" : "Create New Product"}
+                </h2>
+                <form onSubmit={editingProduct ? handleUpdateProduct : handleCreateProduct} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -490,8 +765,11 @@ export default function AdminProductsPage() {
                       </label>
                       <input
                         type="text"
-                        value={newProduct.nameEn}
-                        onChange={(e) => setNewProduct({ ...newProduct, nameEn: e.target.value })}
+                        value={editingProduct ? editingProduct.nameEn : newProduct.nameEn}
+                        onChange={(e) => editingProduct
+                          ? setEditingProduct({ ...editingProduct, nameEn: e.target.value })
+                          : setNewProduct({ ...newProduct, nameEn: e.target.value })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                         required
                       />
@@ -502,8 +780,11 @@ export default function AdminProductsPage() {
                       </label>
                       <input
                         type="text"
-                        value={newProduct.nameAr}
-                        onChange={(e) => setNewProduct({ ...newProduct, nameAr: e.target.value })}
+                        value={editingProduct ? editingProduct.nameAr : newProduct.nameAr}
+                        onChange={(e) => editingProduct
+                          ? setEditingProduct({ ...editingProduct, nameAr: e.target.value })
+                          : setNewProduct({ ...newProduct, nameAr: e.target.value })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                         required
                       />
@@ -516,8 +797,11 @@ export default function AdminProductsPage() {
                         Description (English)
                       </label>
                       <textarea
-                        value={newProduct.descriptionEn}
-                        onChange={(e) => setNewProduct({ ...newProduct, descriptionEn: e.target.value })}
+                        value={editingProduct ? editingProduct.descriptionEn : newProduct.descriptionEn}
+                        onChange={(e) => editingProduct
+                          ? setEditingProduct({ ...editingProduct, descriptionEn: e.target.value })
+                          : setNewProduct({ ...newProduct, descriptionEn: e.target.value })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                         rows={3}
                       />
@@ -527,8 +811,11 @@ export default function AdminProductsPage() {
                         Description (Arabic)
                       </label>
                       <textarea
-                        value={newProduct.descriptionAr}
-                        onChange={(e) => setNewProduct({ ...newProduct, descriptionAr: e.target.value })}
+                        value={editingProduct ? editingProduct.descriptionAr : newProduct.descriptionAr}
+                        onChange={(e) => editingProduct
+                          ? setEditingProduct({ ...editingProduct, descriptionAr: e.target.value })
+                          : setNewProduct({ ...newProduct, descriptionAr: e.target.value })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                         rows={3}
                       />
@@ -543,8 +830,11 @@ export default function AdminProductsPage() {
                       <input
                         type="number"
                         step="0.001"
-                        value={newProduct.price}
-                        onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
+                        value={editingProduct ? editingProduct.price : newProduct.price}
+                        onChange={(e) => editingProduct
+                          ? setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) })
+                          : setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                         required
                       />
@@ -554,8 +844,11 @@ export default function AdminProductsPage() {
                         Category *
                       </label>
                       <select
-                        value={newProduct.categoryId}
-                        onChange={(e) => setNewProduct({ ...newProduct, categoryId: e.target.value })}
+                        value={editingProduct ? editingProduct.categoryId : newProduct.categoryId}
+                        onChange={(e) => editingProduct
+                          ? setEditingProduct({ ...editingProduct, categoryId: e.target.value })
+                          : setNewProduct({ ...newProduct, categoryId: e.target.value })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                         required
                       >
@@ -573,31 +866,55 @@ export default function AdminProductsPage() {
                       </label>
                       <input
                         type="number"
-                        value={newProduct.preparationTimeMinutes}
-                        onChange={(e) => setNewProduct({ ...newProduct, preparationTimeMinutes: parseInt(e.target.value) })}
+                        value={editingProduct ? editingProduct.preparationTimeMinutes : newProduct.preparationTimeMinutes}
+                        onChange={(e) => editingProduct
+                          ? setEditingProduct({ ...editingProduct, preparationTimeMinutes: parseInt(e.target.value) })
+                          : setNewProduct({ ...newProduct, preparationTimeMinutes: parseInt(e.target.value) })
+                        }
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                       />
                     </div>
                   </div>
 
+                  {/* Image Upload */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Image URL
+                      Product Image
+                    </label>
+                    {productImagePreview && (
+                      <div className="mb-3">
+                        <img 
+                          src={productImagePreview} 
+                          alt="Preview" 
+                          className="h-48 w-48 object-cover rounded-lg"
+                        />
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProductImageChange}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Upload image to S3. Images will be publicly accessible.
+                    </p>
+                  </div>
+
+                  {/* Optional URL input as fallback */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Or enter Image URL (optional)
                     </label>
                     <input
                       type="url"
                       value={imageUrlInput}
                       onChange={(e) => setImageUrlInput(e.target.value)}
-                      onBlur={(e) => {
-                        if (e.target.value) {
-                          setNewProduct({ ...newProduct, images: [e.target.value] });
-                        }
-                      }}
                       className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                       placeholder="https://example.com/image.jpg"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      For now, use external image URLs. S3 upload coming soon.
+                      Only use if not uploading a file
                     </p>
                   </div>
 
@@ -605,8 +922,11 @@ export default function AdminProductsPage() {
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={newProduct.isAvailable}
-                        onChange={(e) => setNewProduct({ ...newProduct, isAvailable: e.target.checked })}
+                        checked={editingProduct ? editingProduct.isAvailable : newProduct.isAvailable}
+                        onChange={(e) => editingProduct
+                          ? setEditingProduct({ ...editingProduct, isAvailable: e.target.checked })
+                          : setNewProduct({ ...newProduct, isAvailable: e.target.checked })
+                        }
                         className="w-5 h-5 text-orange-500"
                       />
                       <span className="ml-2 text-sm font-medium text-gray-700">Available for order</span>
@@ -616,16 +936,20 @@ export default function AdminProductsPage() {
                   <div className="flex justify-end gap-4">
                     <button
                       type="button"
-                      onClick={() => setShowProductForm(false)}
+                      onClick={() => {
+                        setShowProductForm(false);
+                        resetProductForm();
+                      }}
                       className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                      disabled={uploadingProductImage}
+                      className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
                     >
-                      Create Product
+                      {uploadingProductImage ? "Uploading..." : editingProduct ? "Update Product" : "Create Product"}
                     </button>
                   </div>
                 </form>
@@ -681,12 +1005,20 @@ export default function AdminProductsPage() {
                           {product.preparationTimeMinutes} min
                         </span>
                       </div>
-                      <button
-                        onClick={() => handleDeleteProduct(product.id)}
-                        className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => startEditProduct(product)}
+                          className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="flex-1 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
