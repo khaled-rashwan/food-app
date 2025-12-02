@@ -5,10 +5,11 @@ import { fetchAuthSession, signOut } from "aws-amplify/auth";
 import { useRouter, useParams } from "next/navigation";
 import { Amplify } from "aws-amplify";
 import { generateClient } from "aws-amplify/data";
-import { uploadData, getUrl } from "aws-amplify/storage";
+import { uploadData } from "aws-amplify/storage";
 import type { Schema } from "@/amplify/data/resource";
 import outputs from "@/amplify_outputs.json";
 import Link from "next/link";
+import S3Image from "@/app/components/S3Image";
 
 // Configure Amplify for client-side auth
 Amplify.configure(outputs, { ssr: true });
@@ -152,12 +153,9 @@ export default function AdminProductsPage() {
         }
       }).result;
 
-      // Get public URL
-      const urlResult = await getUrl({
-        path: result.path,
-      });
-
-      return urlResult.url.toString().split('?')[0]; // Remove query params
+      // Return the path, not the full URL
+      // We'll use getUrl when displaying images
+      return result.path;
     } catch (error) {
       console.error("Error uploading to S3:", error);
       throw error;
@@ -673,8 +671,8 @@ export default function AdminProductsPage() {
                   <div key={category.id} className="bg-white rounded-lg shadow overflow-hidden">
                     {category.imageUrl && (
                       <div className="h-32 bg-gray-200">
-                        <img
-                          src={category.imageUrl}
+                        <S3Image
+                          path={category.imageUrl}
                           alt={category.nameEn}
                           className="w-full h-full object-cover"
                         />
@@ -969,8 +967,8 @@ export default function AdminProductsPage() {
                   <div key={product.id} className="bg-white rounded-lg shadow overflow-hidden">
                     {product.images && product.images.length > 0 && (
                       <div className="h-48 bg-gray-200">
-                        <img
-                          src={product.images[0]}
+                        <S3Image
+                          path={product.images[0]}
                           alt={product.nameEn}
                           className="w-full h-full object-cover"
                         />
