@@ -31,7 +31,7 @@ export default function AdminProductsPage() {
     nameAr: "",
     descriptionEn: "",
     descriptionAr: "",
-    displayOrder: 0,
+    sortOrder: 0,
     isActive: true,
   });
 
@@ -148,7 +148,7 @@ export default function AdminProductsPage() {
           nameAr: "",
           descriptionEn: "",
           descriptionAr: "",
-          displayOrder: 0,
+          sortOrder: 0,
           isActive: true,
         });
         loadCategories();
@@ -367,12 +367,12 @@ export default function AdminProductsPage() {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Display Order
+                        Sort Order
                       </label>
                       <input
                         type="number"
-                        value={newCategory.displayOrder}
-                        onChange={(e) => setNewCategory({ ...newCategory, displayOrder: parseInt(e.target.value) })}
+                        value={newCategory.sortOrder}
+                        onChange={(e) => setNewCategory({ ...newCategory, sortOrder: parseInt(e.target.value) })}
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                       />
                     </div>
