@@ -48,7 +48,7 @@ export default function AdminProductsPage() {
     categoryId: "",
     imageUrl: "",
     isAvailable: true,
-    preparationTime: 15,
+    preparationTimeMinutes: 15,
   });
 
   useEffect(() => {
@@ -165,6 +165,7 @@ export default function AdminProductsPage() {
       const { data, errors } = await client.models.Product.create({
         ...newProduct,
         type: "MEAL" as any, // Default to MEAL type
+        images: newProduct.imageUrl ? [newProduct.imageUrl] : [], // Convert single URL to array
       });
 
       if (errors) {
@@ -182,7 +183,7 @@ export default function AdminProductsPage() {
           categoryId: "",
           imageUrl: "",
           isAvailable: true,
-          preparationTime: 15,
+          preparationTimeMinutes: 15,
         });
         loadProducts();
       }
@@ -571,8 +572,8 @@ export default function AdminProductsPage() {
                       </label>
                       <input
                         type="number"
-                        value={newProduct.preparationTime}
-                        onChange={(e) => setNewProduct({ ...newProduct, preparationTime: parseInt(e.target.value) })}
+                        value={newProduct.preparationTimeMinutes}
+                        onChange={(e) => setNewProduct({ ...newProduct, preparationTimeMinutes: parseInt(e.target.value) })}
                         className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                       />
                     </div>
@@ -636,10 +637,10 @@ export default function AdminProductsPage() {
               ) : (
                 filteredProducts.map((product) => (
                   <div key={product.id} className="bg-white rounded-lg shadow overflow-hidden">
-                    {product.imageUrl && (
+                    {product.images && product.images.length > 0 && (
                       <div className="h-48 bg-gray-200">
                         <img
-                          src={product.imageUrl}
+                          src={product.images[0]}
                           alt={product.nameEn}
                           className="w-full h-full object-cover"
                         />
@@ -671,7 +672,7 @@ export default function AdminProductsPage() {
                           {product.price.toFixed(3)} KWD
                         </span>
                         <span className="text-xs text-gray-500">
-                          {product.preparationTime} min
+                          {product.preparationTimeMinutes} min
                         </span>
                       </div>
                       <button
