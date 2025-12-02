@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { fetchAuthSession, signOut } from "aws-amplify/auth";
 import { useRouter } from "next/navigation";
+import { Amplify } from "aws-amplify";
+import outputs from "@/amplify_outputs.json";
+
+// Configure Amplify for client-side auth
+Amplify.configure(outputs, { ssr: true });
 
 export default function AdminDashboard() {
   const router = useRouter();
