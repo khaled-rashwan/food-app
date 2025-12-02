@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { fetchAuthSession, signOut } from "aws-amplify/auth";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
+import Link from "next/link";
 
 // Configure Amplify for client-side auth
 Amplify.configure(outputs, { ssr: true });
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
   const [userEmail, setUserEmail] = useState<string>("");
   const [userGroups, setUserGroups] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +27,7 @@ export default function AdminDashboard() {
       const session = await fetchAuthSession();
       
       if (!session.tokens) {
-        router.push("/admin/login");
+        router.push(`/${locale}/admin/login`);
         return;
       }
 
@@ -39,14 +42,14 @@ export default function AdminDashboard() {
       setLoading(false);
     } catch (error) {
       console.error("Auth error:", error);
-      router.push("/admin/login");
+      router.push(`/${locale}/admin/login`);
     }
   }
 
   async function handleSignOut() {
     try {
       await signOut();
-      router.push("/admin/login");
+      router.push(`/${locale}/admin/login`);
     } catch (error) {
       console.error("Sign out error:", error);
     }
@@ -118,9 +121,11 @@ export default function AdminDashboard() {
               <p className="text-gray-600 mb-4">
                 Manage menu items and catering packages
               </p>
-              <button className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition">
-                Manage Products
-              </button>
+              <Link href={`/${locale}/admin/products`}>
+                <button className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition">
+                  Manage Products
+                </button>
+              </Link>
             </div>
           )}
 

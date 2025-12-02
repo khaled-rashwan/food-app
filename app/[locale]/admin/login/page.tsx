@@ -2,17 +2,20 @@
 
 import { Authenticator } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useEffect } from "react";
 import { fetchAuthSession } from "aws-amplify/auth";
 import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
+import Link from "next/link";
 
 // Configure Amplify for client-side auth
 Amplify.configure(outputs, { ssr: true });
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
 
   useEffect(() => {
     // Check if already authenticated and redirect to dashboard
@@ -23,7 +26,7 @@ export default function AdminLoginPage() {
     try {
       const session = await fetchAuthSession();
       if (session.tokens) {
-        router.push("/admin/dashboard");
+        router.push(`/${locale}/admin/dashboard`);
       }
     } catch (error) {
       // Not authenticated, stay on login page
@@ -63,7 +66,7 @@ export default function AdminLoginPage() {
             {({ signOut, user }) => {
               // Redirect to dashboard when authenticated
               if (user) {
-                router.push("/admin/dashboard");
+                router.push(`/${locale}/admin/dashboard`);
               }
               return <div></div>;
             }}
@@ -71,12 +74,12 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="text-center mt-6">
-          <a
-            href="/"
+          <Link
+            href={`/${locale}`}
             className="text-sm text-gray-600 hover:text-gray-900"
           >
             ← Back to Homepage
-          </a>
+          </Link>
         </div>
       </div>
     </div>
