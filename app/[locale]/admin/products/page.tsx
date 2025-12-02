@@ -46,10 +46,11 @@ export default function AdminProductsPage() {
     descriptionAr: "",
     price: 0,
     categoryId: "",
-    imageUrl: "",
+    images: [] as string[],
     isAvailable: true,
     preparationTimeMinutes: 15,
   });
+  const [imageUrlInput, setImageUrlInput] = useState("");
 
   useEffect(() => {
     checkAuth();
@@ -165,7 +166,6 @@ export default function AdminProductsPage() {
       const { data, errors } = await client.models.Product.create({
         ...newProduct,
         type: "MEAL" as any, // Default to MEAL type
-        images: newProduct.imageUrl ? [newProduct.imageUrl] : [], // Convert single URL to array
       });
 
       if (errors) {
@@ -181,10 +181,11 @@ export default function AdminProductsPage() {
           descriptionAr: "",
           price: 0,
           categoryId: "",
-          imageUrl: "",
+          images: [],
           isAvailable: true,
           preparationTimeMinutes: 15,
         });
+        setImageUrlInput("");
         loadProducts();
       }
     } catch (error) {
@@ -585,8 +586,13 @@ export default function AdminProductsPage() {
                     </label>
                     <input
                       type="url"
-                      value={newProduct.imageUrl}
-                      onChange={(e) => setNewProduct({ ...newProduct, imageUrl: e.target.value })}
+                      value={imageUrlInput}
+                      onChange={(e) => setImageUrlInput(e.target.value)}
+                      onBlur={(e) => {
+                        if (e.target.value) {
+                          setNewProduct({ ...newProduct, images: [e.target.value] });
+                        }
+                      }}
                       className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
                       placeholder="https://example.com/image.jpg"
                     />
