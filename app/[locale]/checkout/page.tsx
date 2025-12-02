@@ -21,7 +21,10 @@ type CheckoutStep = 'auth' | 'address' | 'payment' | 'confirmation';
 
 // Validation Schemas
 const phoneSchema = z.object({
-  phone: z.string().regex(/^965\d{8}$/, 'Enter valid Kuwait phone (965XXXXXXXX)'),
+  phone: z.string()
+    .min(10, 'Phone number must be at least 10 digits')
+    .max(15, 'Phone number too long')
+    .regex(/^\d+$/, 'Phone number must contain only digits'),
   name: z.string().min(2, 'Name is required'),
   email: z.string().email('Valid email required').optional(),
 });
@@ -258,11 +261,11 @@ export default function CheckoutPage() {
 
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        {locale === 'ar' ? 'رقم الهاتف (الكويت)' : 'Phone Number (Kuwait)'}
+                        {locale === 'ar' ? 'رقم الهاتف' : 'Phone Number'}
                       </label>
                       <input
                         type="text"
-                        placeholder="965XXXXXXXX"
+                        placeholder={locale === 'ar' ? 'أدخل رقم هاتفك' : 'Enter your phone number'}
                         {...phoneForm.register('phone')}
                         className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       />
